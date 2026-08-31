@@ -43,14 +43,15 @@ const Header = () => {
                     "Content-type": "application/json;charset=utf-8"
                 },
                 credentials: "include",
-                body: JSON.stringify({ "refreshToken" : localStorage.getItem("refreshToken") })
+                body: JSON.stringify({ 'refreshToken' : localStorage.getItem("refreshToken") })
             });
 
-            if(res.ok) console.log("로그아웃 성공");
+            if(!res.ok) console.log("로그아웃 문제 발생");
 
             // token 삭제
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
+            localStorage.removeItem("id");
 
             // header 로그아웃 상태로 전환
             navi("/");
@@ -76,7 +77,6 @@ const Header = () => {
                             <>
                                 <Link to="/product/create" className="nav-link">제품등록</Link>
                                 <Link to="/product/list" className="nav-link">제품목록</Link>
-                                <Link to="/ordering/create" className="nav-link">주문</Link>
                                 <Link to="/member/mypage" className="nav-link">마이페이지</Link>
                                 <Link onClick={handleLogout} className="nav-link">로그아웃</Link>
                             </>
@@ -86,6 +86,7 @@ const Header = () => {
                             <>
                                 <Link to="/member/signup" className="nav-link">회원가입</Link>
                                 <Link to="/member/login" className="nav-link">로그인</Link>
+                                <Link to="/product/list" className="nav-link">제품목록</Link>
                             </>
                         )
                         }

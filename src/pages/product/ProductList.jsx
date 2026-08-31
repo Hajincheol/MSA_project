@@ -9,16 +9,21 @@ const ProductList = () => {
     useEffect(() => {
 
         fetch(`http://localhost:8081/product/list`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+            method: "POST"
+        })
+        .then((res) => {
+            if(res.ok) {
+                return res.json();
+            } else {
+                return null;
             }
         })
-        .then((res) => res.json())
         .then((res) => {
-            console.log(res);
-            setPList(res);
+
+            if(res !== null) {
+                setPList(res);
+            }
+
         })
         .catch((err) => console.log(err));
     }, []);
@@ -27,11 +32,13 @@ const ProductList = () => {
         <div>
             <Container>
                 <br />
-                <h2>제품 목록</h2>
+                <h2 className='text-center'>제품 목록</h2>
                 <br />
         
-                {pList.map((product) => <ProductItem key={product.id} product={product} />)}
+                {pList.length > 0 && pList.map((product) => <ProductItem key={product.id} product={product} />)}
             </Container>
+            <br />
+            <br />
         </div>
     );
 };

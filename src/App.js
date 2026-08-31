@@ -23,7 +23,7 @@ function App() {
           <Route path="/product/list" element={<ProductList />} />
           <Route path="/product/update/:p_id" element={<ProductUpdate />} />
           
-          <Route path="/ordering/create" element={<OrderCreate />} />
+          <Route path="/order/create/:p_id" element={<OrderCreate />} />
         </Routes>
       </BrowserRouter>
     </div>
