@@ -4,24 +4,25 @@ import { useNavigate } from 'react-router-dom';
 
 const MyPage = () => {
 
+    // navigate
     const navi = useNavigate();
 
-    // 등록 or 주문 상품 list와 page
+    // 등록 or 주문 상품 list / page / 등록or주문 탭 여부
     const[page, setPage] = useState(1);
     const[pList, setPList] = useState([]);
     const[oList, setOList] = useState([]);
+    const[key, setKey] = useState('');
 
     // 내 정보
-    const[name, setName] = useState('');
     const[myinfo, setMyinfo] = useState({
         'name': '',
         'email': ''
-        //, 'password': ''
     });
 
     useEffect(() => {
 
-        myInfo();
+        setKey('home');
+        myInfoUpdate();
         myProductList();
         myOrderList();
 
@@ -70,6 +71,7 @@ const MyPage = () => {
 
             } else if(res.status === 401) {
 
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
 
@@ -114,6 +116,7 @@ const MyPage = () => {
 
             } else if(res.status === 401) {
 
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
 
@@ -143,7 +146,7 @@ const MyPage = () => {
     }
 
     // 내 정보 가져오기
-    const myInfo = () => {
+    const myInfoUpdate = () => {
 
         fetch(`http://localhost:8081/member/mypage/myinfo`, {
             method: "POST",
@@ -156,9 +159,13 @@ const MyPage = () => {
 
             if(res.ok) {
                 return res.json();
+
             } else if(res.status === 401) {
+                
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
+
                 } else {
 
                     alert("로그아웃 되셨습니다.");
@@ -192,29 +199,28 @@ const MyPage = () => {
         e.preventDefault();
 
         try {
-            const res = await fetch(`http://localhost:8081/member/mypage/myname`, {
+            const res = await fetch(`http://localhost:8081/member/mypage/nameChange/` + myinfo.name, {
                 method: "POST",
                 headers: {
-                    "Content-type": "application/json;charset=utf-8",
                     "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
                 },
-                credentials: "include",
-                body: JSON.stringify({'name': name})
+                credentials: "include"
             });
 
             if(res.ok) {
                 const data = await res.json();
 
-                setMyinfo({ ...myinfo, 'name': name });
-
                 localStorage.setItem("accessToken", data.accessToken);
                 localStorage.setItem("refreshToken", data.refreshToken);
 
-                myInfo();
+                myInfoUpdate();
 
             } else if(res.status === 401) {
+                
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
+
                 } else {
 
                     alert("로그아웃 되셨습니다.");
@@ -241,7 +247,7 @@ const MyPage = () => {
 
         if(window.confirm("정말 취소 하시겠습니까?")) {
             try {
-                const res = await fetch(`http://localhost:8081/ordering/cancel/${pList[page-1].id}`, {
+                const res = await fetch(`http://localhost:8081/ordering/cancel/${oList[page-1].id}`, {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
@@ -251,10 +257,12 @@ const MyPage = () => {
 
                 if(res.ok) {
                     alert("취소 되셨습니다.");
-                    pList[page-1].orderStatus = 'CANCELED';
 
+                    myOrderList();
+                    
                 } else if(res.status === 401) {
 
+                    // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                     if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                         newAccessToken();
 
@@ -288,10 +296,17 @@ const MyPage = () => {
             <Container>
                 <Card>
                     <Card.Body>
+                        {/* onSelect 다른 Tab이 선택되면 실행되는 속성 */}
+                        {/* activeKey 현재 탭 설정 */}
                         <Tabs
                             defaultActiveKey="home"
                             id="fill-tab-example"
                             className="mb-3"
+                            activeKey={key}
+                            onSelect={(k) => {
+                                setPage(1);
+                                setKey(k);
+                            }}
                             justify
                         >
                             <Tab eventKey="home" title="내 정보">
@@ -307,7 +322,7 @@ const MyPage = () => {
                                         <Form.Control
                                             type="text"
                                             placeholder="이름을 입력해 주세요."
-                                            onChange={(e) => setName(e.target.value)}
+                                            onChange={(e) => setMyinfo({...myinfo, 'name': e.target.value})}
                                             required
                                         />
                                     </Form.Group>
@@ -319,9 +334,9 @@ const MyPage = () => {
                             </Tab>
 
 
-                            <Tab eventKey="product" title="등록한 상품" onSelect={() => setPage(1)}>
+                            <Tab eventKey="product" title="등록한 상품">
 
-                                {pList.length > 0
+                                {pList.length > 0 && key === 'product'
                                 ?
                                     <>
                                         <Card.Text>번호 : {pList[page-1].id}</Card.Text>
@@ -330,7 +345,7 @@ const MyPage = () => {
                                         <Card.Text>가격 : {pList[page-1].price}</Card.Text>
                                         <Card.Text>수량 : {pList[page-1].stockQuantity}</Card.Text>
 
-                                        <Pagination>
+                                        <Pagination className='d-flex justify-content-center'>
                                             {page > 2 ? <Pagination.First onClick={() => setPage(1)} /> : <Pagination.First disabled/>}
                                             {page > 1 ? <Pagination.Prev onClick={() => setPage(page-1)} /> : <Pagination.Prev disabled/>}
                                             {page-2 > 0 && <Pagination.Item onClick={() => setPage(page-2)}>{page-2}</Pagination.Item>}
@@ -356,33 +371,39 @@ const MyPage = () => {
                             </Tab>
 
 
-                            <Tab eventKey="order" title="주문한 상품" onSelect={() => setPage(1)}>
+                            <Tab eventKey="order" title="주문한 상품">
 
-                                {oList.length > 0
+                                {oList.length > 0 && key === 'order'
                                 ?
                                     <>
                                         <Card.Text>번호 : {oList[page-1].id}</Card.Text>
+                                        <Card.Text>이름 : {oList[page-1].product.name}</Card.Text>
                                         <Card.Text>수량 : {oList[page-1].quantity}</Card.Text>
                                         <Card.Text>상태 : {oList[page-1].orderStatus}</Card.Text>
 
-                                        <Button onClick={orderCancel} variant='primary'>주문 취소</Button>
-                                        <br />
-                                        <br />
-                                        
-                                        <Pagination>
+                                        {oList[page-1].orderStatus !== 'CANCELED'
+                                        &&
+                                        <>
+                                            <Button onClick={orderCancel} variant='primary'>주문 취소</Button>
+                                            <br />
+                                            <br />
+                                        </>
+                                        }
+
+                                        <Pagination className='d-flex justify-content-center'>
                                             {page > 2 ? <Pagination.First onClick={() => setPage(1)} /> : <Pagination.First disabled/>}
                                             {page > 1 ? <Pagination.Prev onClick={() => setPage(page-1)} /> : <Pagination.Prev disabled/>}
-                                            {page-2 > 0 && <Pagination.Item onClick={(e) => setPage(page-2)}>{page-2}</Pagination.Item>}
-                                            {page-1 > 0 && <Pagination.Item onClick={(e) => setPage(page-1)}>{page-1}</Pagination.Item>}
+                                            {page-2 > 0 && <Pagination.Item onClick={() => setPage(page-2)}>{page-2}</Pagination.Item>}
+                                            {page-1 > 0 && <Pagination.Item onClick={() => setPage(page-1)}>{page-1}</Pagination.Item>}
 
 
                                             <Pagination.Item active>{page}</Pagination.Item>
 
 
-                                            {page < oList.length && <Pagination.Item onClick={(e) => setPage(page+1)}>{page+1}</Pagination.Item>}
-                                            {page < oList.length-1 && <Pagination.Item onClick={(e) => setPage(page+2)}>{page+2}</Pagination.Item>}
+                                            {page < oList.length && <Pagination.Item onClick={() => setPage(page+1)}>{page+1}</Pagination.Item>}
+                                            {page < oList.length-1 && <Pagination.Item onClick={() => setPage(page+2)}>{page+2}</Pagination.Item>}
                                             {page < oList.length ? <Pagination.Next onClick={() => setPage(page+1)} /> : <Pagination.Next disabled/>}
-                                            {page < oList.length-1 ? <Pagination.Last onClick={() => setPage(pList.length)} /> : <Pagination.Last disabled/>}
+                                            {page < oList.length-1 ? <Pagination.Last onClick={() => setPage(oList.length)} /> : <Pagination.Last disabled/>}
                                         </Pagination>
                                     </>
                                 :

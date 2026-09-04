@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const ProductItem = (props) => {
 
+    // navigate, product, 참조된 memberid
     const navi = useNavigate();
     const { id, name, category, price, stockQuantity } = props.product;
     const memberId = `${props.product.member.id}`;
@@ -51,12 +52,14 @@ const ProductItem = (props) => {
                 
             } else if(res.status === 401) {
 
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
 
                 } else {
                     alert("로그아웃 되셨습니다.");
 
+                    // localStorage에 저장된 데이터 삭제
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
                     localStorage.removeItem("id");
@@ -80,10 +83,9 @@ const ProductItem = (props) => {
                     <Card.Text>분류 : {category}</Card.Text>
                     <Card.Text>가격 : {price}</Card.Text>
                     <Card.Text>수량 : {stockQuantity}</Card.Text>
-                    {/*<Card.Text>등록자 : {memberId}</Card.Text>*/}
-
+                    
                     {/* 본인 일시 수정, 삭제 / 아닐 경우 구매 */
-                        localStorage.getItem("id") === memberId
+                    localStorage.getItem("id") === memberId
                     ?
                         <>
                             <Link to={"/product/update/" + id} className="btn btn-primary">수정</Link>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 const SignUp = () => {
 
+    // navigate, member
     const navi = useNavigate();
     const[data, setData] = useState({
         'name': '',

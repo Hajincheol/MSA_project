@@ -4,16 +4,20 @@ import ProductItem from './ProductItem';
 
 const ProductList = () => {
 
+    // product list
     const[pList, setPList] = useState([]);
 
+    // 모든 product 정보 가져오기
     useEffect(() => {
 
         fetch(`http://localhost:8081/product/list`, {
             method: "POST"
         })
         .then((res) => {
+            
             if(res.ok) {
                 return res.json();
+                
             } else {
                 return null;
             }

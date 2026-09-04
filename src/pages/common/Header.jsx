@@ -7,32 +7,6 @@ const Header = () => {
     const condition = localStorage.getItem("accessToken");  // accessToken 여부
     const navi = useNavigate();                             // navigate
 
-    /* 만료된 accessToken을 새로 발급하기
-    const newAccessToken = async() => {
-
-        try {
-            const res = await fetch(`http://localhost:8081/member/refresh-token`, {
-                method: "POST",
-                headers: {
-                    "Content-type": "application/json;charset=utf-8"
-                },
-                credentials: "include",
-                body: JSON.stringify({'refreshToken': localStorage.getItem("refreshToken")})
-            });
-
-            if(!res.ok) {
-                alert("인증 오류 발생");
-            } else {
-                const data = await res.json();
-                localStorage.setItem("accessToken", data.accessToken);
-            }
-
-        } catch {
-            alert("인증 오류");
-        }
-    }
-    */
-
     // 로그아웃
     const handleLogout = async() => {
 

@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 const ProductCreate = () => {
 
-    const navi = useNavigate();
-    const[data, setData] = useState({
+    const navi = useNavigate();         // navigate
+    const[data, setData] = useState({   // product
         'name': '',
         'category': '',
         'price': '',
@@ -64,6 +64,7 @@ const ProductCreate = () => {
 
             } else if(res.status === 401) {
 
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
 

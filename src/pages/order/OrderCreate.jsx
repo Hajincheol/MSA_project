@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Container, Form, Pagination } from 'react-bootstrap';
+import { Button, Card, Container, Pagination } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const OrderCreate = (props) => {
 
+    // navigate, product id, product, order
     const navi = useNavigate();
     const p_id = useParams().p_id;
     const[product, setProduct] = useState({
@@ -16,31 +17,6 @@ const OrderCreate = (props) => {
         'productId': `${p_id}`,
         'productCount': 1
     });
-
-    // 만료된 accessToken을 새로 발급하기
-    const newAccessToken = async() => {
-
-        try {
-            const res = await fetch(`http://localhost:8081/member/refresh-token`, {
-                method: "POST",
-                headers: {
-                    "Content-type": "application/json;charset=utf-8"
-                },
-                credentials: "include",
-                body: JSON.stringify({'refreshToken': localStorage.getItem("refreshToken")})
-            });
-
-            if(!res.ok) {
-                alert("인증 오류 발생");
-            } else {
-                const data = await res.json();
-                localStorage.setItem("accessToken", data.accessToken);
-            }
-
-        } catch {
-            alert("인증 오류");
-        }
-    }
     
     // product id로 product 정보 가져오기
     useEffect(() => {
@@ -88,6 +64,31 @@ const OrderCreate = (props) => {
         .catch((err) => console.log(err));
     }, []);
 
+    // 만료된 accessToken을 새로 발급하기
+    const newAccessToken = async() => {
+
+        try {
+            const res = await fetch(`http://localhost:8081/member/refresh-token`, {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json;charset=utf-8"
+                },
+                credentials: "include",
+                body: JSON.stringify({'refreshToken': localStorage.getItem("refreshToken")})
+            });
+
+            if(!res.ok) {
+                alert("인증 오류 발생");
+            } else {
+                const data = await res.json();
+                localStorage.setItem("accessToken", data.accessToken);
+            }
+
+        } catch {
+            alert("인증 오류");
+        }
+    }
+
     const createOrdering = async() => {
 
         if(order.productCount > product.stockQuantity) {
@@ -112,6 +113,7 @@ const OrderCreate = (props) => {
 
             } else if(res.status === 401) {
 
+                // 인증 에러(401)가 발생시 accessToken이 만료되었다는 에러이니 재발급
                 if(window.confirm("로그인 시간이 만료되었습니다. 연장하시겠습니까?")) {
                     newAccessToken();
 
