@@ -1,0 +1,58 @@
+server:
+  port: 8081
+
+# eureka 서버에게 질의하기 위해 필요하며, 모든 모듈에 공통으로 필요
+# defaultZone: http://localhost:8761/eureka/  => eureka 서버의 위치정보 명시
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+# eureka에게 내 이름이 무엇인지 알려줌, 지금은 필요없지만 공통으로 필요하므로 복사붙여넣기 위해 그대로 둠
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+
+      # CORS 처리. 서비스모듈에서는 웹브라우저와 직접 통신하지 않으므로, cors처리 불필요.
+      # msa 전체 아키텍처에서 apigateway가 글로벌하게 cors 처리를 하겠다.
+      # 아래 4개 허용 설정으로 member - common > donfig > SecurityConfig에서 4개 허용이 가능
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:    # 어떤 도메인을 허용할지
+              - 'http://localhost:3000'    # 프론트엔드 local 허용url 예시
+            #              - 'https://www.example.com'   # 프론트엔드  배포시 허용url 예시
+            allowedMethods: '*'       # 모든 httpMethod를 허용
+            allowedHeaders: '*'       # 모든 httpHeader를 허용
+            allowedCredentials: true   # authorization 같은 인증정보 허용
+
+      server:
+        webflux:
+      # routes처리.    # 각 lb://xx  ->  yml 파일의  application: name: xx와 일치해야 함
+          routes:
+            - id: member-service
+              predicates:
+                - Path=/member-service/**      # 이 패턴인 경우  uri: lb://member-service 로 가겠다.
+              filters:
+                # StripPrefix : 첫번째 접두어(member-service)를 제거후에 member-service로 http요청 전달
+                - StripPrefix=1
+                # eureka에게 member-service로 갈건데 어디로 갈지를 물어봄, eureka가 localhost:8080 또는 8081.. 알
+              uri: lb://member-service      # lb://xxx-xxx => 위 application name과 일치
+            - id: ordering-service
+              predicates:
+                - Path=/ordering-service/**
+              filters:
+                - StripPrefix=1
+              uri: lb://ordering-service
+            - id: product-service
+              predicates:
+                - Path=/product-service/**
+              filters:
+                - StripPrefix=1
+              uri: lb://product-service
+# jwt 토큰 :  member 서비스에서 토큰을 만들고, apigateway가 검증을 해야 하는데, member 서비스에서 토튼을 만들때
+#  secretkey가 사용되어 토큰이 생성된다. 그 토큰을 검증하기 위해 당연히 그 secretkey를 알고 있어야 하므로 여기에 설정.
+jwt:
+  secretKey: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5

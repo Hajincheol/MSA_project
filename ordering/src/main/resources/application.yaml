@@ -1,0 +1,7 @@
+# application name은 github에 올라간 member-service.yaml과 동일해야 한다.
+spring:
+  application:
+    name: ordering-service
+  config:
+    import: "optional:configserver:http://localhost:8888/"
+    fail-fast: true

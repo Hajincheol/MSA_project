@@ -1,0 +1,60 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// eureka client 의존성 추가 => eureka에게 내 위치를 등록해야하므로
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	// 재고감소 비동기 처리를 위한 kafka 관련 의존성 추가
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	// config 서버 사용을 위한 client 의존성 추가
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+	// rebbitmq를 리슨하고 있다가 이벤트가 발행되면 가져간다.
+	implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
+
+	// circuit breaker 의존성 추가
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+}
+
+// springcloud 전체에 대한 버전 명시.. 플젝전체를 스프링클라우드 플젝으로 만듬
+// 가장 안정화된 버전 : 2025.1.3
+dependencyManagement {
+	imports{
+		mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2025.1.3'
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

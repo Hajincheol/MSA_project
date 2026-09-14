@@ -1,0 +1,32 @@
+# config 서버이고, 어떤 repository를 바라볼지 설정
+server:
+  port: 8888
+
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/Hajincheol/ibm05_spring_cloud_config_re.git
+          clone-on-start: true
+          # main branch
+          default-label: main
+          # 만약 private repository일 경우 토큰을 발급 받음
+          # username: github 사용자명
+          # password: 토큰값
+    bus:
+      enabled: true
+
+# actuator 관련 설정, 어떤 엔드포인트를 사용할지에 대한 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        # config 서버가 제공해주는 endpoint, bus refresh를 통해 실시간 config 설정 갱신
+        # env, info, refresh등도 활용 가능
+        include: busrefresh, health

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: eureka
+
+# apigateway - application.yml에서 http://localhost:8761/eureka/로 설정되어 있으므로
+server:
+  port: 8761
+
+eureka:
+  client:
+    # eurek server가 자기 자신은 eureka server에 client로 등록하지 않겠다는 설정
+    register-with-eureka: false
+    # register를 문의할일이 없고 알려만 주므로
+    fetch-registry: false
