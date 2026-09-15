@@ -80,12 +80,7 @@ public class ProductService {
     public List<Product> productSelectByName(String pName) {
         System.out.println("<<< ProductService - productSelectByName >>>");
 
-        Optional<List<Product>> optionalProducts = productRepository.findByNameContaining(pName);
-        if(optionalProducts.isPresent()) {
-            return optionalProducts.get();
-        } else {
-            return null;
-        }
+        return productRepository.findByNameContaining(pName);
     }
 
 
@@ -171,25 +166,7 @@ public class ProductService {
     public List<Product> selectByMemberId(String mId) {
         System.out.println("<<< ProductService - selectByMemberId >>>");
 
-        Optional<List<Product>> optionalProduct = productRepository.findByMemberId(Long.parseLong(mId));
-
-        if(optionalProduct.isPresent()) {
-
-            List<Product> productList = optionalProduct.get();
-            List<Product> myProductList = new ArrayList<>();
-
-            for(int i=0; i<productList.size(); i++) {
-
-                if(productList.get(i).getStockQuantity() > 0) {
-                    myProductList.add(productList.get(i));
-                }
-            }
-
-            return myProductList;
-
-        } else {
-            return null;
-        }
+        return productRepository.findByMemberIdAndStockQuantityGreaterThan(Long.parseLong(mId), 0);
     }
 
     // 제품 목록 조회
@@ -249,26 +226,20 @@ public class ProductService {
             throw new RuntimeException(e);
         }
 
-        Optional<List<Product>> optionalProducts = productRepository.findByMemberId(mId);
-        if(optionalProducts.isPresent()) {
+        List<Product> products = productRepository.findByMemberId(mId);
+        productRepository.deleteAllByMemberIdIn(
 
-            productRepository.deleteAllByMemberIdIn(
+                products.stream()
+                        .map(Product::getMemberId)
+                        .toList()
+        );
 
-                    optionalProducts.get()
-                            .stream()
-                            .map(Product::getMemberId)
-                            .toList()
-            );
+        kafkaTemplate.send("canceled-orders-topic",
 
-
-            kafkaTemplate.send("canceled-orders-topic",
-
-                    optionalProducts.get()
-                            .stream()
-                            .map(Product::getId)
-                            .toList()
-            );
-        }
+                products.stream()
+                        .map(Product::getId)
+                        .toList()
+        );
     }
 
 

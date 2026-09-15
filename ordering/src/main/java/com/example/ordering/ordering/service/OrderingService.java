@@ -183,14 +183,7 @@ public class OrderingService {
     public List<Ordering> selectByMemberId(String mId) {
         System.out.println("<<< OrderingService - selectByMemberId >>>");
 
-        Optional<List<Ordering>> optionalOrdering = orderingRepository.findByMemberId(Long.parseLong(mId));
-
-        if(optionalOrdering.isPresent()) {
-            return optionalOrdering.get();
-
-        } else {
-            return null;
-        }
+        return orderingRepository.findByMemberId(Long.parseLong(mId));
     }
 
     // 주문 취소
@@ -243,25 +236,23 @@ public class OrderingService {
         }
 
 
-        Optional<List<Ordering>> optionalOrderings = orderingRepository.findByProductIdIn(productIdList);
-        if(optionalOrderings.isPresent()) {
+        List<Ordering> orderingList = orderingRepository.findByProductIdIn(productIdList);
 
-            // 내부 반복으로 주문 상태 CANCELED로 변경
-            orderingRepository.saveAll(
-                    optionalOrderings.get()
-                            .stream()
-                            .map(o ->
-                                    Ordering.builder()
-                                            .id(o.getId())
-                                            .memberId(o.getMemberId())
-                                            .productId(o.getProductId())
-                                            .quantity(o.getQuantity())
-                                            .orderStatus(OrderStatus.CANCELED)
-                                            .build()
-                            )
-                            .toList()
-            );
-        }
+        // 내부 반복으로 주문 상태 CANCELED로 변경
+        orderingRepository.saveAll(
+
+                orderingList.stream()
+                        .map(o ->
+                                Ordering.builder()
+                                        .id(o.getId())
+                                        .memberId(o.getMemberId())
+                                        .productId(o.getProductId())
+                                        .quantity(o.getQuantity())
+                                        .orderStatus(OrderStatus.CANCELED)
+                                        .build()
+                        )
+                        .toList()
+        );
     }
 
     public Boolean existsByMemberId(Long mId) {
@@ -284,47 +275,44 @@ public class OrderingService {
             throw new RuntimeException(e);
         }
 
-        Optional<List<Ordering>> optionalOrderings = orderingRepository.findByMemberId(mId);
-        if(optionalOrderings.isPresent()) {
+        List<Ordering> orderingList = orderingRepository.findByMemberId(mId);
 
-            // 내부 반복으로 주문 상태 CANCELED로 변경
-            List<Ordering> orderingList = optionalOrderings.get();
+        // 내부 반복으로 주문 상태 CANCELED로 변경
 
-            kafkaTemplate.send("revert-stock-topic",
+        kafkaTemplate.send("revert-stock-topic",
 
-                    // List<Ordering> -> List<ProductUpdateStockDTO>
-                    orderingList.stream()
-                            .collect(
-                                    Collectors.groupingBy(
-                                            Ordering::getProductId,
-                                            Collectors.summingInt(Ordering::getQuantity)
-                                    )
-                            )
-                            .entrySet()
-                            .stream()
-                            .map(entry ->
-                                    ProductUpdateStockDTO.builder()
-                                            .productId(entry.getKey())
-                                            .productQuantity(entry.getValue())
-                                            .build()
-                            )
-                            .toList()
-            );
+                // List<Ordering> -> List<ProductUpdateStockDTO>
+                orderingList.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        Ordering::getProductId,
+                                        Collectors.summingInt(Ordering::getQuantity)
+                                )
+                        )
+                        .entrySet()
+                        .stream()
+                        .map(entry ->
+                                ProductUpdateStockDTO.builder()
+                                        .productId(entry.getKey())
+                                        .productQuantity(entry.getValue())
+                                        .build()
+                        )
+                        .toList()
+        );
 
-            // orderingList 수정
-            orderingRepository.saveAll(
-                    orderingList.stream()
-                            .map(o ->
-                                    Ordering.builder()
-                                            .id(o.getId())
-                                            .memberId(o.getMemberId())
-                                            .productId(o.getProductId())
-                                            .quantity(o.getQuantity())
-                                            .orderStatus(OrderStatus.CANCELED)
-                                            .build()
-                            )
-                            .toList()
-            );
-        }
+        // orderingList 수정
+        orderingRepository.saveAll(
+                orderingList.stream()
+                        .map(o ->
+                                Ordering.builder()
+                                        .id(o.getId())
+                                        .memberId(o.getMemberId())
+                                        .productId(o.getProductId())
+                                        .quantity(o.getQuantity())
+                                        .orderStatus(OrderStatus.CANCELED)
+                                        .build()
+                        )
+                        .toList()
+        );
     }
 }

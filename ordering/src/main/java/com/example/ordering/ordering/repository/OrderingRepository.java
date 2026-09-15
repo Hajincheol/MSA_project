@@ -10,11 +10,9 @@ import java.util.Optional;
 
 @Repository
 public interface OrderingRepository extends JpaRepository<Ordering, Long> {
-    Optional<List<Ordering>> findByMemberId(Long mId);
+    List<Ordering> findByMemberId(Long mId);
 
     Boolean existsByMemberIdAndOrderStatusEquals(Long mId, OrderStatus orderStatus);
 
-    void deleteByMemberId(Long mId);
-
-    Optional<List<Ordering>> findByProductIdIn(List<Long> productIdList);
+    List<Ordering> findByProductIdIn(List<Long> productIdList);
 }

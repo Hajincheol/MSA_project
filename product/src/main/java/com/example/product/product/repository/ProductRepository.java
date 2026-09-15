@@ -9,7 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    Optional<List<Product>> findByMemberId(long mId);
+    List<Product> findByMemberId(long mId);
+
+    List<Product> findByMemberIdAndStockQuantityGreaterThan(Long mId, Integer stockQuantity);
 
     List<Product> findAllByIdInOrderById(Iterable<Long> ids);
 
@@ -17,5 +19,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     void deleteAllByMemberIdIn(List<Long> productList);
 
-    Optional<List<Product>> findByNameContaining(String pName);
+    List<Product> findByNameContaining(String pName);
 }
