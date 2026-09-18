@@ -45,6 +45,7 @@ public class MemberService {
     }
 
 
+    // 회원가입, 로그인 --------------------------------------------------
     // 회원가입
     public Long save(MemberSaveRequestDTO memberSaveRequestDTO) {
 
@@ -69,20 +70,6 @@ public class MemberService {
         return member.getId();
     }
 
-    // admin만 가능, 회원 list
-    public List<Member> memberList(String role) {
-        System.out.println("<<< MemberService - memberList >>>");
-
-        if(role.equals("ROLE_ADMIN")) {
-
-            List<Member> memberList = memberRepository.findAll();
-
-            return memberList;
-        } else {
-            return null;
-        }
-    }
-
     // 로그인
     public Member login(LoginDTO dto) {
         System.out.println("<<< MemberService - login >>>");
@@ -96,9 +83,7 @@ public class MemberService {
         if(optionalMember.isEmpty()) {
             check = false;
 
-        }
-
-        if(!passwordEncoder.matches(dto.getPassword(), optionalMember.get().getPassword())) {
+        } else if(!passwordEncoder.matches(dto.getPassword(), optionalMember.get().getPassword())) {
             check = false;
         }
 
@@ -109,6 +94,7 @@ public class MemberService {
         return optionalMember.get();
     }
 
+    // 마이페이지 -----------------------------------------------------
     // 내 정보
     public Member myPageInfo(String id) {
         System.out.println("<<< MemberService - myPageInfo >>>");
@@ -144,6 +130,9 @@ public class MemberService {
         return null;
     }
 
+
+    // admin만 가능 ----------------------------------------------------
+    // kafka AND circuitBreaker
     // admin만 가능 => BLACK or USER 상태 변경
     @CircuitBreaker(name = "memberStatusService", fallbackMethod = "fallbackMemberService")
     public void memberChangeStatus(Long id) {
@@ -167,7 +156,7 @@ public class MemberService {
             if(productFeign.existsProductByMemberId(id)) {
 
                 // 해당 user의 모든 등록 제품 삭제
-                kafkaTemplate.send("black-user-product-delete", id);
+                kafkaTemplate.send("black-user-product-disabled", id);
             }
 
             memberRepository.save(
@@ -214,6 +203,20 @@ public class MemberService {
             }
         } else {
             return HttpStatus.NOT_FOUND;
+        }
+    }
+
+    // admin만 가능, 회원 list
+    public List<Member> memberList(String role) {
+        System.out.println("<<< MemberService - memberList >>>");
+
+        if(role.equals("ROLE_ADMIN")) {
+
+            List<Member> memberList = memberRepository.findAll();
+
+            return memberList;
+        } else {
+            return null;
         }
     }
 }

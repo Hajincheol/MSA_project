@@ -17,6 +17,7 @@ public class OrderingController {
         this.orderingService = orderingService;
     }
 
+    // 등록 -----------------------------------------------------
     // 매개변수 추가
     // => @RequestHeader("X-User-Id") String userId
     // => ApiGateway에서 헤더로 넘긴 검증받은 X-User-Id임
@@ -28,7 +29,8 @@ public class OrderingController {
         return new ResponseEntity<>(ordering.getId(), HttpStatus.CREATED);
     }
 
-    // 특정 유저의 id로 검색
+    // 조회 ------------------------------------------------------
+    // 특정 유저의 id로 조회
     @PostMapping("/selectByMemberId/{mId}")
     public ResponseEntity<?> selectByMemberId(@PathVariable String mId) {
         System.out.println("<<< OrderingController - selectByMemberId >>>");
@@ -36,6 +38,14 @@ public class OrderingController {
         return new ResponseEntity<>(orderingService.selectByMemberId(mId), HttpStatus.OK);
     }
 
+    @GetMapping("/existsByMemberId/{mId}")
+    public ResponseEntity<?> existsByMemberId(@PathVariable Long mId) {
+        System.out.println("<<< OrderingController - existsByMemberId >>>");
+
+        return new ResponseEntity<>(orderingService.existsByMemberId(mId), HttpStatus.OK);
+    }
+
+    // 수정 -----------------------------------------------------
     // 주문 취소
     @PostMapping("/cancel/{oId}")
     public ResponseEntity<?> orderCancel(@PathVariable String oId) {
@@ -43,12 +53,5 @@ public class OrderingController {
 
         orderingService.orderCancel(oId);
         return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    @GetMapping("/existsByMemberId/{mId}")
-    public ResponseEntity<?> existsByMemberId(@PathVariable Long mId) {
-        System.out.println("<<< OrderingController - existsByMemberId >>>");
-
-        return new ResponseEntity<>(orderingService.existsByMemberId(mId), HttpStatus.OK);
     }
 }

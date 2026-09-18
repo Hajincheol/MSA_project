@@ -5,19 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByMemberId(long mId);
+    List<Product> findAllByMemberId(long mId);
 
-    List<Product> findByMemberIdAndStockQuantityGreaterThan(Long mId, Integer stockQuantity);
+    List<Product> findAllByMemberIdAndStockQuantityGreaterThan(Long mId, Integer stockQuantity);
 
     List<Product> findAllByIdInOrderById(Iterable<Long> ids);
 
     Boolean existsByMemberId(Long mId);
 
-    void deleteAllByMemberIdIn(List<Long> productList);
+    List<Product> findAllByNameContaining(String pName);
 
-    List<Product> findByNameContaining(String pName);
+    List<Product> findAllByIdIn(List<Long> list);
 }

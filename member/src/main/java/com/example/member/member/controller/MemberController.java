@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -215,7 +214,7 @@ public class MemberController {
         System.out.println("<<< MemberController - memberChangeStatus >>>");
 
         if(!role.equals("ROLE_ADMIN")) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
         } else {
             memberService.memberChangeStatus(Long.parseLong(id));

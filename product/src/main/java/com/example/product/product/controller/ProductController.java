@@ -46,10 +46,10 @@ public class ProductController {
 
     // 제품 id로 상세 조회
     @PostMapping("/selectById/{pId}")
-    public ResponseEntity<?> productSelectById(@PathVariable String pId) {
-        System.out.println("<<< ProductController - productSelectById >>>");
+    public ResponseEntity<?> selectById(@PathVariable String pId) {
+        System.out.println("<<< ProductController - selectById >>>");
 
-        return new ResponseEntity<>(productService.productSelectById(Long.parseLong(pId)), HttpStatus.OK);
+        return new ResponseEntity<>(productService.selectById(Long.parseLong(pId)), HttpStatus.OK);
     }
 
 
@@ -58,7 +58,7 @@ public class ProductController {
     public ResponseEntity<?> productSelectByName(@PathVariable String pName) {
         System.out.println("<<< ProductController - productSelectByName >>>");
 
-        return new ResponseEntity<>(productService.productSelectByName(pName), HttpStatus.OK);
+        return new ResponseEntity<>(productService.selectByName(pName), HttpStatus.OK);
     }
 
 
@@ -79,7 +79,7 @@ public class ProductController {
         // 3초지연
         // Thread.sleep(3000L);
 
-        return new ResponseEntity<>(productService.productSelectById(id), HttpStatus.OK);
+        return new ResponseEntity<>(productService.selectById(id), HttpStatus.OK);
     }
 
 
@@ -101,13 +101,13 @@ public class ProductController {
     }
 
 
-    // 삭제 ----------------------------------------------------------------------
-    // 제품 삭제
-    @PostMapping("/delete/{pId}")
+    // 상태 ----------------------------------------------------------------------
+    // 제품 비활성화
+    @PostMapping("/changeStatus/{pId}")
     public ResponseEntity<?> productDelete(@PathVariable String pId) {
-        System.out.println("<<< ProductController - productDelete >>>");
+        System.out.println("<<< ProductController - changeStatus >>>");
 
-        productService.productDelete(pId);
+        productService.changeStatus(pId);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

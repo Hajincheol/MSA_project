@@ -123,6 +123,115 @@ public class OrderingService {
     }
     */
 
+    // 조회 ------------------------------------------------
+    // 특정 유저의 id로 검색
+    public List<Ordering> selectByMemberId(String mId) {
+        System.out.println("<<< OrderingService - selectByMemberId >>>");
+
+        return orderingRepository.findAllByMemberId(Long.parseLong(mId));
+    }
+
+    public Boolean existsByMemberId(Long mId) {
+        System.out.println("<<< OrderingService - existsByMemberId >>>");
+
+        return orderingRepository.existsByMemberIdAndOrderStatusEquals(mId, OrderStatus.ORDERED);
+    }
+
+    // kafka AND circuitBreaker --------------------------------------
+    // 비동기 통신 kafka product id 관련 모든 주문 취소
+    // 제품이 삭제될 예정이므로 모든 주문 취소 상태로 전환
+    @KafkaListener(topics = "canceled-orders-topic", containerFactory = "kafkaListener")
+    public void orderCancelByProductId(String message) {
+        System.out.println("<<< OrderingService - orderCancelByProductId >>>");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<Long> productIdList = null;
+
+        try {
+            // List<Long>.class가 불가능하기에 new TypeReference<List<Long>>() {} 사용
+            // 주는 쪽에서 forEach문으로 여러번 넣어서도 가능
+            productIdList = objectMapper.readValue(message, new TypeReference<List<Long>>() {});
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        List<Ordering> orderingList = orderingRepository.findAllByProductIdIn(productIdList);
+
+        // 내부 반복으로 주문 상태 CANCELED로 변경
+        orderingRepository.saveAll(
+
+                orderingList.stream()
+                        .map(o ->
+                                Ordering.builder()
+                                        .id(o.getId())
+                                        .memberId(o.getMemberId())
+                                        .productId(o.getProductId())
+                                        .quantity(o.getQuantity())
+                                        .orderStatus(OrderStatus.CANCELED)
+                                        .build()
+                        )
+                        .toList()
+        );
+    }
+
+    // 회원이 black되었기에 회원의 모든 주문 취소
+    @KafkaListener(topics = "black-canceled-orders-topic", containerFactory = "kafkaListener")
+    public void blackOrderCancelByMemberId(String message) {
+        System.out.println("<<< OrderingService - blackOrderCancelByMemberId >>>");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Long mId = null;
+
+        try {
+            mId = objectMapper.readValue(message, Long.class);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<Ordering> orderingList = orderingRepository.findAllByMemberId(mId);
+
+        // 내부 반복으로 주문 상태 CANCELED로 변경
+
+        kafkaTemplate.send("revert-stock-topic",
+
+                // List<Ordering> -> List<ProductUpdateStockDTO>
+                orderingList.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        Ordering::getProductId,
+                                        Collectors.summingInt(Ordering::getQuantity)
+                                )
+                        )
+                        .entrySet()
+                        .stream()
+                        .map(entry ->
+                                ProductUpdateStockDTO.builder()
+                                        .productId(entry.getKey())
+                                        .productQuantity(entry.getValue())
+                                        .build()
+                        )
+                        .toList()
+        );
+
+        // orderingList 수정
+        orderingRepository.saveAll(
+                orderingList.stream()
+                        .map(o ->
+                                Ordering.builder()
+                                        .id(o.getId())
+                                        .memberId(o.getMemberId())
+                                        .productId(o.getProductId())
+                                        .quantity(o.getQuantity())
+                                        .orderStatus(OrderStatus.CANCELED)
+                                        .build()
+                        )
+                        .toList()
+        );
+    }
+
 
     // 방식2. OpenFeign 동기 처리
     // 방식3. Kafka 비동기 처리
@@ -167,25 +276,6 @@ public class OrderingService {
         return ordering;
     }
 
-    public Ordering fallbackProductService(OrderCreateDTO dto, String memberId, Throwable throwable) {
-        System.out.println("<<< OrderingService - fallbackProductService >>>");
-
-        throw new RuntimeException("상품 서비스가 응답이 없어, 에러가 발생했습니다. 나중에 다시 해주세요.");
-    }
-
-    public void fallbackCancelOrderProductService(String oId, Throwable throwable) {
-        System.out.println("<<< OrderingService - fallbackCancelOrderProductService >>>");
-
-        throw new RuntimeException("상품 서비스가 응답이 없어, 에러가 발생했습니다. 나중에 다시 해주세요.");
-    }
-
-    // 특정 유저의 id로 검색
-    public List<Ordering> selectByMemberId(String mId) {
-        System.out.println("<<< OrderingService - selectByMemberId >>>");
-
-        return orderingRepository.findByMemberId(Long.parseLong(mId));
-    }
-
     // 주문 취소
     @CircuitBreaker(name = "orderProductService", fallbackMethod = "fallbackCancelOrderProductService")
     public void orderCancel(String oId) {
@@ -217,102 +307,17 @@ public class OrderingService {
         }
     }
 
-    // 비동기 통신 kafka product id 관련 모든 주문 취소
-    // 제품이 삭제될 예정이므로 모든 주문 취소 상태로 전환
-    @KafkaListener(topics = "canceled-orders-topic", containerFactory = "kafkaListener")
-    public void orderCancelByProductId(String message) {
-        System.out.println("<<< OrderingService - orderCancelByProductId >>>");
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<Long> productIdList = null;
+    // fallback 메서드 --------------------------------------
+    public Ordering fallbackProductService(OrderCreateDTO dto, String memberId, Throwable throwable) {
+        System.out.println("<<< OrderingService - fallbackProductService >>>");
 
-        try {
-            // List<Long>.class가 불가능하기에 new TypeReference<List<Long>>() {} 사용
-            // 주는 쪽에서 forEach문으로 여러번 넣어서도 가능
-            productIdList = objectMapper.readValue(message, new TypeReference<List<Long>>() {});
-
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        List<Ordering> orderingList = orderingRepository.findByProductIdIn(productIdList);
-
-        // 내부 반복으로 주문 상태 CANCELED로 변경
-        orderingRepository.saveAll(
-
-                orderingList.stream()
-                        .map(o ->
-                                Ordering.builder()
-                                        .id(o.getId())
-                                        .memberId(o.getMemberId())
-                                        .productId(o.getProductId())
-                                        .quantity(o.getQuantity())
-                                        .orderStatus(OrderStatus.CANCELED)
-                                        .build()
-                        )
-                        .toList()
-        );
+        throw new RuntimeException("상품 서비스가 응답이 없어, 에러가 발생했습니다. 나중에 다시 해주세요.");
     }
 
-    public Boolean existsByMemberId(Long mId) {
-        System.out.println("<<< OrderingService - existsByMemberId >>>");
+    public void fallbackCancelOrderProductService(String oId, Throwable throwable) {
+        System.out.println("<<< OrderingService - fallbackCancelOrderProductService >>>");
 
-        return orderingRepository.existsByMemberIdAndOrderStatusEquals(mId, OrderStatus.ORDERED);
-    }
-
-    @KafkaListener(topics = "black-canceled-orders-topic", containerFactory = "kafkaListener")
-    public void blackOrderCancelByMemberId(String message) {
-        System.out.println("<<< OrderingService - blackOrderCancelByMemberId >>>");
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        Long mId = null;
-
-        try {
-            mId = objectMapper.readValue(message, Long.class);
-
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        List<Ordering> orderingList = orderingRepository.findByMemberId(mId);
-
-        // 내부 반복으로 주문 상태 CANCELED로 변경
-
-        kafkaTemplate.send("revert-stock-topic",
-
-                // List<Ordering> -> List<ProductUpdateStockDTO>
-                orderingList.stream()
-                        .collect(
-                                Collectors.groupingBy(
-                                        Ordering::getProductId,
-                                        Collectors.summingInt(Ordering::getQuantity)
-                                )
-                        )
-                        .entrySet()
-                        .stream()
-                        .map(entry ->
-                                ProductUpdateStockDTO.builder()
-                                        .productId(entry.getKey())
-                                        .productQuantity(entry.getValue())
-                                        .build()
-                        )
-                        .toList()
-        );
-
-        // orderingList 수정
-        orderingRepository.saveAll(
-                orderingList.stream()
-                        .map(o ->
-                                Ordering.builder()
-                                        .id(o.getId())
-                                        .memberId(o.getMemberId())
-                                        .productId(o.getProductId())
-                                        .quantity(o.getQuantity())
-                                        .orderStatus(OrderStatus.CANCELED)
-                                        .build()
-                        )
-                        .toList()
-        );
+        throw new RuntimeException("상품 서비스가 응답이 없어, 에러가 발생했습니다. 나중에 다시 해주세요.");
     }
 }
